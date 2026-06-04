@@ -16,6 +16,18 @@ const cleanSegment = (text: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
+const correctMarkerPattern = /\s*\(?\s*[xX]\s*\)?(?:\s*<-.*)?$/;
+
+const extractChoice = (text: string) => {
+  const cleaned = cleanSegment(text);
+  const markedCorrect = correctMarkerPattern.test(cleaned);
+
+  return {
+    text: markedCorrect ? cleaned.replace(correctMarkerPattern, "").trim() : cleaned,
+    markedCorrect
+  };
+};
+
 const makeId = (questionNumber: number, index: number) =>
   `${questionNumber}-${index}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -80,15 +92,21 @@ export function parseQuestions(text: string, boldSpans: BoldSpan[] = []): QuizQu
       const firstChoiceIndex = choiceMatches[0].index ?? 0;
       const question = cleanSegment(block.content.slice(0, firstChoiceIndex));
       const choices: Record<string, string> = {};
+      let markedCorrectAnswer: string | null = null;
 
       // Each answer begins at a label such as "a." and ends right before
       // the next label. This preserves wrapped Vietnamese text while removing
-      // OCR/PDF line-break noise.
+      // OCR/PDF line-break noise and strips a trailing "X" answer marker.
       choiceMatches.forEach((choiceMatch, choiceIndex) => {
         const key = choiceMatch[1].toLowerCase();
         const labelEnd = (choiceMatch.index ?? 0) + choiceMatch[0].length;
         const nextStart = choiceMatches[choiceIndex + 1]?.index ?? block.content.length;
-        choices[key] = cleanSegment(block.content.slice(labelEnd, nextStart));
+        const choice = extractChoice(block.content.slice(labelEnd, nextStart));
+        choices[key] = choice.text;
+
+        if (choice.markedCorrect) {
+          markedCorrectAnswer = key;
+        }
       });
 
       return {
@@ -96,7 +114,7 @@ export function parseQuestions(text: string, boldSpans: BoldSpan[] = []): QuizQu
         questionNumber: block.questionNumber,
         question,
         choices,
-        correctAnswer: detectCorrectAnswer(choices, boldSpans)
+        correctAnswer: markedCorrectAnswer ?? detectCorrectAnswer(choices, boldSpans)
       };
     })
     .filter((question): question is QuizQuestion => Boolean(question));
@@ -105,11 +123,11 @@ export function parseQuestions(text: string, boldSpans: BoldSpan[] = []): QuizQu
 export const sampleText = `1. Ý thức có trước, vật chất có sau, ý thức quyết định vật chất, đây là quan điểm nào?
 a. Duy vật.
 b. Duy tâm chủ quan.
-c. Duy tâm.
+c. Duy tâm. X
 d. Nhị nguyên.
 
 2. Theo chủ nghĩa duy vật biện chứng, vật chất là gì?
 a. Một dạng năng lượng tinh thần.
-b. Thực tại khách quan tồn tại độc lập với ý thức.
+b. Thực tại khách quan tồn tại độc lập với ý thức. X
 c. Cảm giác chủ quan của con người.
 d. Ý niệm tuyệt đối.`;
