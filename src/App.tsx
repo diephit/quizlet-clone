@@ -112,7 +112,7 @@ function App() {
         <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">Document to deck</p>
-            <h1 className="mt-1 text-3xl font-bold text-slate-950">Quizlet Clone</h1>
+            <h1 className="mt-1 text-3xl font-bold text-slate-950">them bu cu be gai</h1>
           </div>
           <div className="flex flex-wrap gap-2">
             <button className="btn-primary" onClick={saveCurrentDeck}>Save Deck</button>
