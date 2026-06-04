@@ -111,7 +111,7 @@ function App() {
       <div className="mx-auto max-w-7xl space-y-5">
         <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">Document to deck</p>
+            <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">Skibidi toilet</p>
             <h1 className="mt-1 text-3xl font-bold text-slate-950">them bu cu be gai</h1>
           </div>
           <div className="flex flex-wrap gap-2">
