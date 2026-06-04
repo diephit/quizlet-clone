@@ -7,6 +7,41 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const isBoldFont = (fontName = "") => /bold|black|heavy|semibold|demi/i.test(fontName);
 
+type PositionedText = {
+  value: string;
+  x: number;
+  y: number;
+  fontName: string;
+};
+
+const lineTolerance = 4;
+
+const buildPageText = (items: PositionedText[]) => {
+  const lines: PositionedText[][] = [];
+
+  for (const item of [...items].sort((a, b) => b.y - a.y || a.x - b.x)) {
+    const line = lines.find((currentLine) => Math.abs(currentLine[0].y - item.y) <= lineTolerance);
+
+    if (line) {
+      line.push(item);
+    } else {
+      lines.push([item]);
+    }
+  }
+
+  return lines
+    .map((line) =>
+      line
+        .sort((a, b) => a.x - b.x)
+        .map((item) => item.value)
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim()
+    )
+    .filter(Boolean)
+    .join("\n");
+};
+
 export async function extractTextFromPdf(file: File): Promise<{
   text: string;
   boldSpans: BoldSpan[];
@@ -22,7 +57,7 @@ export async function extractTextFromPdf(file: File): Promise<{
     const page = await pdf.getPage(pageNumber);
     loadedPages.push(page);
     const content = await page.getTextContent();
-    const pageParts: string[] = [];
+    const pageItems: PositionedText[] = [];
 
     for (const item of content.items) {
       if (!("str" in item)) {
@@ -30,7 +65,13 @@ export async function extractTextFromPdf(file: File): Promise<{
       }
 
       const value = item.str;
-      pageParts.push(value);
+      const transform = item.transform;
+      pageItems.push({
+        value,
+        x: transform[4],
+        y: transform[5],
+        fontName: String(item.fontName)
+      });
 
       if (isBoldFont(String(item.fontName))) {
         const labelMatch = value.match(/^\s*([a-zA-Z])\.\s*(.+)?/);
@@ -41,7 +82,7 @@ export async function extractTextFromPdf(file: File): Promise<{
       }
     }
 
-    pages.push(pageParts.join(" "));
+    pages.push(buildPageText(pageItems));
   }
 
   const text = pages.join("\n").trim();
