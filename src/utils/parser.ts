@@ -28,6 +28,22 @@ const extractChoice = (text: string) => {
   };
 };
 
+const filterSequentialChoiceMatches = (matches: RegExpMatchArray[]) => {
+  let lastChoiceCode = "a".charCodeAt(0) - 1;
+
+  return matches.filter((match) => {
+    const key = match[1].toLowerCase();
+    const choiceCode = key.charCodeAt(0);
+
+    if (choiceCode <= lastChoiceCode) {
+      return false;
+    }
+
+    lastChoiceCode = choiceCode;
+    return true;
+  });
+};
+
 const makeId = (questionNumber: number, index: number) =>
   `${questionNumber}-${index}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -84,7 +100,7 @@ const detectCorrectAnswer = (
 export function parseQuestions(text: string, boldSpans: BoldSpan[] = []): QuizQuestion[] {
   return splitQuestionBlocks(text)
     .map((block, index) => {
-      const choiceMatches = [...block.content.matchAll(choicePattern)];
+      const choiceMatches = filterSequentialChoiceMatches([...block.content.matchAll(choicePattern)]);
       if (choiceMatches.length === 0) {
         return null;
       }
