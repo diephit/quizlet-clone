@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { QuizQuestion } from "../types";
 
 type Props = {
@@ -12,6 +12,11 @@ export function FlashcardMode({ questions, reviewOnly = false, onExit }: Props) 
   const [revealed, setRevealed] = useState(false);
   const current = questions[index];
 
+  const move = (nextIndex: number) => {
+    setIndex(Math.min(Math.max(nextIndex, 0), questions.length - 1));
+    setRevealed(false);
+  };
+
   const choiceEntries = useMemo(
     () => Object.entries(current?.choices ?? {}).filter(([, value]) => value.trim()),
     [current]
@@ -24,14 +29,33 @@ export function FlashcardMode({ questions, reviewOnly = false, onExit }: Props) 
     return `${current.correctAnswer.toUpperCase()}. ${current.choices[current.correctAnswer] ?? ""}`;
   }, [current]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.code)) {
+        event.preventDefault();
+      }
+
+      if (event.code === "Space" || event.code === "ArrowUp" || event.code === "ArrowDown") {
+        setRevealed((value) => !value);
+        return;
+      }
+
+      if (event.code === "ArrowLeft") {
+        move(index - 1);
+      }
+
+      if (event.code === "ArrowRight") {
+        move(index + 1);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [index, questions.length]);
+
   if (!current) {
     return <section className="empty-state">No cards available.</section>;
   }
-
-  const move = (nextIndex: number) => {
-    setIndex(Math.min(Math.max(nextIndex, 0), questions.length - 1));
-    setRevealed(false);
-  };
 
   return (
     <section className="study-panel">
