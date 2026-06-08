@@ -41,6 +41,7 @@ export function FlashcardMode({
   const [revealed, setRevealed] = useState(false);
   const [dragX, setDragX] = useState(0);
   const [pendingMark, setPendingMark] = useState<StudyMark | null>(null);
+  const [darkModeActive, setDarkModeActive] = useState(false);
   const dragStartRef = useRef<number | null>(null);
   const suppressClickRef = useRef(false);
   const feedbackTimerRef = useRef<number | null>(null);
@@ -97,6 +98,10 @@ export function FlashcardMode({
   const feedbackProgress = pendingMark ? 1 : dragProgress;
   const activeFeedback = activeMark ? markFeedback[activeMark] : null;
   const contentOpacity = activeFeedback ? Math.max(1 - feedbackProgress, 0) : 1;
+  const feedbackShadow =
+    activeFeedback && darkModeActive
+      ? `0 0 ${Math.round(14 + feedbackProgress * 22)}px rgba(${activeFeedback.rgb}, ${0.25 + feedbackProgress * 0.55})`
+      : undefined;
 
   const answerText = useMemo(() => {
     if (!current?.correctAnswer) {
@@ -116,6 +121,18 @@ export function FlashcardMode({
         window.clearTimeout(feedbackTimerRef.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const syncDarkMode = () => {
+      setDarkModeActive(document.documentElement.classList.contains("theme-dark"));
+    };
+    const observer = new MutationObserver(syncDarkMode);
+
+    syncDarkMode();
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+
+    return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
@@ -224,8 +241,10 @@ export function FlashcardMode({
         onPointerUp={finishDrag}
         style={{
           transform: dragX ? `translateX(${dragX}px) rotate(${dragX / 28}deg)` : undefined,
-          backgroundColor: activeFeedback ? `rgba(${activeFeedback.rgb}, ${feedbackProgress * 0.72})` : undefined,
+          backgroundColor:
+            activeFeedback && !darkModeActive ? `rgba(${activeFeedback.rgb}, ${feedbackProgress * 0.72})` : undefined,
           borderColor: activeFeedback ? activeFeedback.border : undefined,
+          boxShadow: feedbackShadow,
         }}
       >
         {onMark && activeFeedback && (
