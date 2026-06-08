@@ -8,27 +8,75 @@ import { BoldSpan, QuizQuestion } from "./types";
 import { extractTextFromImage } from "./utils/ocr";
 import { parseQuestions } from "./utils/parser";
 import { extractTextFromPdf } from "./utils/pdfExtractor";
-import { importDeck, loadDeck, saveDeck } from "./utils/storage";
+import {
+  importDeck,
+  loadDeck,
+  loadKeepStudyingIds,
+  saveDeck,
+  saveKeepStudyingIds,
+} from "./utils/storage";
 
-type Mode = "editor" | "flashcards" | "quiz" | "review";
+type StudyStatus = "keep-studying" | "memorized";
+type Mode = "editor" | "flashcards" | "memorize" | "quiz" | "nonMemorized";
 
 function App() {
   const [rawText, setRawText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
-  const [reviewQuestions, setReviewQuestions] = useState<QuizQuestion[]>([]);
+  const [keepStudyingIds, setKeepStudyingIds] = useState<string[]>([]);
   const [mode, setMode] = useState<Mode>("editor");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
 
   useEffect(() => {
     setQuestions(loadDeck());
+    setKeepStudyingIds(loadKeepStudyingIds());
   }, []);
 
   const validQuestions = useMemo(
     () => questions.filter((question) => question.question.trim() && Object.keys(question.choices).length > 0),
     [questions]
   );
+
+  const nonMemorizedQuestions = useMemo(
+    () => validQuestions.filter((question) => keepStudyingIds.includes(question.id)),
+    [keepStudyingIds, validQuestions]
+  );
+
+  useEffect(() => {
+    const validIds = new Set(validQuestions.map((question) => question.id));
+
+    setKeepStudyingIds((ids) => {
+      const nextIds = ids.filter((id) => validIds.has(id));
+      if (nextIds.length === ids.length) {
+        return ids;
+      }
+
+      saveKeepStudyingIds(nextIds);
+      return nextIds;
+    });
+
+  }, [validQuestions]);
+
+  const updateStudyStatus = (question: QuizQuestion, studyStatus: StudyStatus) => {
+    setKeepStudyingIds((ids) => {
+      const nextIds =
+        studyStatus === "keep-studying"
+          ? ids.includes(question.id)
+            ? ids
+            : [...ids, question.id]
+          : ids.filter((id) => id !== question.id);
+
+      saveKeepStudyingIds(nextIds);
+      return nextIds;
+    });
+
+    setStatus(
+      studyStatus === "keep-studying"
+        ? `Question ${question.questionNumber} added to Keep Studying.`
+        : `Question ${question.questionNumber} marked as memorized.`
+    );
+  };
 
   const processDocument = async () => {
     setBusy(true);
@@ -80,7 +128,24 @@ function App() {
   };
 
   if (mode === "flashcards") {
-    return <FlashcardMode questions={validQuestions} onExit={() => setMode("editor")} />;
+    return (
+      <FlashcardMode
+        questions={validQuestions}
+        title="Learn Flashcards"
+        onExit={() => setMode("editor")}
+      />
+    );
+  }
+
+  if (mode === "memorize") {
+    return (
+      <FlashcardMode
+        questions={validQuestions}
+        keepStudyingIds={keepStudyingIds}
+        onExit={() => setMode("editor")}
+        onMark={updateStudyStatus}
+      />
+    );
   }
 
   if (mode === "quiz") {
@@ -88,20 +153,18 @@ function App() {
       <QuizMode
         questions={validQuestions}
         onExit={() => setMode("editor")}
-        onReviewIncorrect={(items) => {
-          setReviewQuestions(items);
-          setMode("review");
-        }}
       />
     );
   }
 
-  if (mode === "review") {
+  if (mode === "nonMemorized") {
     return (
       <FlashcardMode
-        questions={reviewQuestions}
-        reviewOnly
+        questions={nonMemorizedQuestions}
+        keepStudyingIds={keepStudyingIds}
+        title="Non Memorized"
         onExit={() => setMode("editor")}
+        onMark={updateStudyStatus}
       />
     );
   }
@@ -117,7 +180,17 @@ function App() {
           <div className="flex flex-wrap gap-2">
             <button className="btn-primary" onClick={saveCurrentDeck}>Save Deck</button>
             <button className="btn-secondary" disabled={validQuestions.length === 0} onClick={() => setMode("flashcards")}>
-              Start Flashcards
+              Learn Flashcards
+            </button>
+            <button className="btn-secondary" disabled={validQuestions.length === 0} onClick={() => setMode("memorize")}>
+              Memorize Cards
+            </button>
+            <button
+              className="btn-secondary"
+              disabled={nonMemorizedQuestions.length === 0}
+              onClick={() => setMode("nonMemorized")}
+            >
+              View Non Memorized
             </button>
             <button className="btn-secondary" disabled={validQuestions.length === 0} onClick={() => setMode("quiz")}>
               Start Quiz
@@ -137,7 +210,9 @@ function App() {
         <div className="flex flex-col justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center">
           <div>
             <p className="text-sm font-semibold text-slate-900">Local deck</p>
-            <p className="text-sm text-slate-500">{questions.length} editable questions loaded</p>
+            <p className="text-sm text-slate-500">
+              {questions.length} editable questions loaded - {nonMemorizedQuestions.length} non memorized
+            </p>
           </div>
           <ExportButtons questions={questions} onImport={handleImport} />
         </div>

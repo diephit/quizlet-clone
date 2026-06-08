@@ -3,15 +3,27 @@ import { QuizQuestion } from "../types";
 
 type Props = {
   questions: QuizQuestion[];
-  onReviewIncorrect: (questions: QuizQuestion[]) => void;
   onExit: () => void;
 };
 
-export function QuizMode({ questions, onReviewIncorrect, onExit }: Props) {
+type QuizRunMode = "all" | "retry";
+
+export function QuizMode({ questions, onExit }: Props) {
+  const [quizRunMode, setQuizRunMode] = useState<QuizRunMode>("all");
   const [index, setIndex] = useState(0);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selectedById, setSelectedById] = useState<Record<string, string>>({});
   const [incorrectIds, setIncorrectIds] = useState<string[]>([]);
-  const current = questions[index];
+  const [retryIds, setRetryIds] = useState<string[]>([]);
+  const activeQuestions = useMemo(
+    () => (quizRunMode === "retry" ? questions.filter((question) => retryIds.includes(question.id)) : questions),
+    [questions, quizRunMode, retryIds]
+  );
+  const incorrectQuestions = useMemo(
+    () => questions.filter((question) => incorrectIds.includes(question.id)),
+    [incorrectIds, questions]
+  );
+  const current = activeQuestions[index];
+  const selected = current ? selectedById[current.id] ?? null : null;
 
   const availableChoices = useMemo(
     () => Object.entries(current?.choices ?? {}).filter(([, value]) => value.trim()),
@@ -19,7 +31,17 @@ export function QuizMode({ questions, onReviewIncorrect, onExit }: Props) {
   );
 
   if (!current) {
-    return <section className="empty-state">No quiz questions available.</section>;
+    return (
+      <section className="study-panel">
+        <div className="study-topbar">
+          <span>{quizRunMode === "retry" ? "Retry Wrong Questions" : "Quiz"}</span>
+          <button className="btn-secondary" onClick={onExit}>Back to Editor</button>
+        </div>
+        <div className="empty-state">
+          {quizRunMode === "retry" ? "No wrong questions left to retry." : "No quiz questions available."}
+        </div>
+      </section>
+    );
   }
 
   const isAnswered = selected !== null;
@@ -29,27 +51,56 @@ export function QuizMode({ questions, onReviewIncorrect, onExit }: Props) {
     if (isAnswered) {
       return;
     }
-    setSelected(key);
+
+    setSelectedById((answers) => ({ ...answers, [current.id]: key }));
+
     if (key !== current.correctAnswer) {
       setIncorrectIds((ids) => (ids.includes(current.id) ? ids : [...ids, current.id]));
+      return;
+    }
+
+    if (quizRunMode === "retry") {
+      setIncorrectIds((ids) => ids.filter((id) => id !== current.id));
     }
   };
 
-  const next = () => {
-    setSelected(null);
-    setIndex((value) => Math.min(value + 1, questions.length - 1));
+  const move = (nextIndex: number) => {
+    setIndex(Math.min(Math.max(nextIndex, 0), activeQuestions.length - 1));
   };
 
-  const incorrectQuestions = questions.filter((question) => incorrectIds.includes(question.id));
+  const startRetryWrong = () => {
+    const nextRetryIds = incorrectQuestions.map((question) => question.id);
+    if (nextRetryIds.length === 0) {
+      return;
+    }
+
+    setQuizRunMode("retry");
+    setRetryIds(nextRetryIds);
+    setSelectedById({});
+    setIndex(0);
+  };
+
+  const returnToFullQuiz = () => {
+    setQuizRunMode("all");
+    setSelectedById({});
+    setIndex(0);
+  };
 
   return (
     <section className="study-panel">
       <div className="study-topbar">
-        <span>Quiz {index + 1}/{questions.length}</span>
+        <span>
+          {quizRunMode === "retry" ? "Retry Wrong" : "Quiz"} {index + 1}/{activeQuestions.length}
+        </span>
         <button className="btn-secondary" onClick={onExit}>Back to Editor</button>
       </div>
       <div className="rounded-lg border border-slate-200 bg-white p-5">
-        <p className="text-sm font-semibold text-teal-700">Question {current.questionNumber}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-teal-700">Question {current.questionNumber}</p>
+          <p className="text-sm font-semibold text-slate-500">
+            {incorrectQuestions.length} wrong saved
+          </p>
+        </div>
         <h2 className="mt-2 text-xl font-semibold text-slate-950">{current.question}</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {availableChoices.map(([key, value]) => {
@@ -73,20 +124,28 @@ export function QuizMode({ questions, onReviewIncorrect, onExit }: Props) {
         {isAnswered && (
           <div className={`mt-4 rounded-md px-3 py-2 text-sm ${isCorrect ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
             {isCorrect
-              ? "Correct."
+              ? quizRunMode === "retry"
+                ? "Correct. Removed from wrong questions."
+                : "Correct."
               : `Incorrect. Correct answer: ${current.correctAnswer?.toUpperCase() ?? "not selected"}.`}
           </div>
         )}
       </div>
       <div className="flex flex-wrap justify-between gap-3">
-        <button
-          className="btn-secondary"
-          disabled={incorrectQuestions.length === 0}
-          onClick={() => onReviewIncorrect(incorrectQuestions)}
-        >
-          Review Incorrect
+        <button className="btn-secondary" disabled={index === 0} onClick={() => move(index - 1)}>
+          Previous
         </button>
-        <button className="btn-primary" disabled={!isAnswered || index === questions.length - 1} onClick={next}>
+        <div className="flex flex-wrap gap-2">
+          {quizRunMode === "retry" && (
+            <button className="btn-secondary" onClick={returnToFullQuiz}>
+              Full Quiz
+            </button>
+          )}
+          <button className="btn-secondary" disabled={incorrectQuestions.length === 0} onClick={startRetryWrong}>
+            Retry Wrong
+          </button>
+        </div>
+        <button className="btn-primary" disabled={!isAnswered || index === activeQuestions.length - 1} onClick={() => move(index + 1)}>
           Next Question
         </button>
       </div>
