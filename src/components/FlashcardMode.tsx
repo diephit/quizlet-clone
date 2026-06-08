@@ -1,5 +1,6 @@
 import { PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { QuizQuestion } from "../types";
+import { formatAnswerText } from "../utils/answerKeys";
 
 type Props = {
   questions: QuizQuestion[];
@@ -104,10 +105,11 @@ export function FlashcardMode({
       : undefined;
 
   const answerText = useMemo(() => {
-    if (!current?.correctAnswer) {
+    if (!current) {
       return "No correct answer selected yet.";
     }
-    return `${current.correctAnswer.toUpperCase()}. ${current.choices[current.correctAnswer] ?? ""}`;
+
+    return formatAnswerText(current);
   }, [current]);
 
   useEffect(() => {
@@ -274,7 +276,7 @@ export function FlashcardMode({
             )}
           </span>
           {revealed ? (
-            <span className="mt-4 block rounded-md border border-teal-200 bg-teal-50 p-5 text-xl font-semibold text-slate-950">
+            <span className="mt-4 block whitespace-pre-line rounded-md border border-teal-200 bg-teal-50 p-5 text-xl font-semibold text-slate-950">
               {answerText}
             </span>
           ) : (

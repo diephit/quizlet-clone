@@ -1,5 +1,6 @@
 import { ChangeEvent } from "react";
 import { QuizQuestion } from "../types";
+import { formatAnswerLabel } from "../utils/answerKeys";
 
 type Props = {
   questions: QuizQuestion[];
@@ -25,7 +26,7 @@ const toCsv = (questions: QuizQuestion[]) => {
     question.choices.b ?? "",
     question.choices.c ?? "",
     question.choices.d ?? "",
-    question.correctAnswer ?? ""
+    formatAnswerLabel(question)
   ]);
 
   return [headers, ...rows]

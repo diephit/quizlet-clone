@@ -5,7 +5,7 @@ export type QuizQuestion = {
   choices: {
     [key: string]: string;
   };
-  correctAnswer: string | null;
+  correctAnswer: string | string[] | null;
 };
 
 export type BoldSpan = {

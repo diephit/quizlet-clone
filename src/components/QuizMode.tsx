@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { QuizQuestion } from "../types";
+import { answerSetsMatch, formatAnswerLabel, normalizeAnswerKeys } from "../utils/answerKeys";
 
 type Props = {
   questions: QuizQuestion[];
@@ -11,7 +12,8 @@ type QuizRunMode = "all" | "retry";
 export function QuizMode({ questions, onExit }: Props) {
   const [quizRunMode, setQuizRunMode] = useState<QuizRunMode>("all");
   const [index, setIndex] = useState(0);
-  const [selectedById, setSelectedById] = useState<Record<string, string>>({});
+  const [selectedById, setSelectedById] = useState<Record<string, string[]>>({});
+  const [submittedById, setSubmittedById] = useState<Record<string, boolean>>({});
   const [incorrectIds, setIncorrectIds] = useState<string[]>([]);
   const [retryIds, setRetryIds] = useState<string[]>([]);
   const activeQuestions = useMemo(
@@ -23,7 +25,9 @@ export function QuizMode({ questions, onExit }: Props) {
     [incorrectIds, questions]
   );
   const current = activeQuestions[index];
-  const selected = current ? selectedById[current.id] ?? null : null;
+  const selected = current ? selectedById[current.id] ?? [] : [];
+  const correctAnswers = current ? normalizeAnswerKeys(current.correctAnswer) : [];
+  const isSubmitted = current ? Boolean(submittedById[current.id]) : false;
 
   const availableChoices = useMemo(
     () => Object.entries(current?.choices ?? {}).filter(([, value]) => value.trim()),
@@ -44,17 +48,31 @@ export function QuizMode({ questions, onExit }: Props) {
     );
   }
 
-  const isAnswered = selected !== null;
-  const isCorrect = selected === current.correctAnswer;
+  const isCorrect = isSubmitted && answerSetsMatch(selected, correctAnswers);
 
   const choose = (key: string) => {
-    if (isAnswered) {
+    if (isSubmitted) {
       return;
     }
 
-    setSelectedById((answers) => ({ ...answers, [current.id]: key }));
+    setSelectedById((answers) => {
+      const currentAnswers = normalizeAnswerKeys(answers[current.id] ?? []);
+      const nextAnswers = currentAnswers.includes(key)
+        ? currentAnswers.filter((answerKey) => answerKey !== key)
+        : [...currentAnswers, key].sort();
 
-    if (key !== current.correctAnswer) {
+      return { ...answers, [current.id]: nextAnswers };
+    });
+  };
+
+  const submitAnswer = () => {
+    if (isSubmitted || selected.length === 0) {
+      return;
+    }
+
+    setSubmittedById((answers) => ({ ...answers, [current.id]: true }));
+
+    if (!answerSetsMatch(selected, correctAnswers)) {
       setIncorrectIds((ids) => (ids.includes(current.id) ? ids : [...ids, current.id]));
       return;
     }
@@ -77,12 +95,14 @@ export function QuizMode({ questions, onExit }: Props) {
     setQuizRunMode("retry");
     setRetryIds(nextRetryIds);
     setSelectedById({});
+    setSubmittedById({});
     setIndex(0);
   };
 
   const returnToFullQuiz = () => {
     setQuizRunMode("all");
     setSelectedById({});
+    setSubmittedById({});
     setIndex(0);
   };
 
@@ -104,13 +124,15 @@ export function QuizMode({ questions, onExit }: Props) {
         <h2 className="mt-2 text-xl font-semibold text-slate-950">{current.question}</h2>
         <div className="mt-5 grid gap-3 sm:grid-cols-2">
           {availableChoices.map(([key, value]) => {
-            const active = selected === key;
-            const correct = current.correctAnswer === key;
+            const active = selected.includes(key);
+            const correct = correctAnswers.includes(key);
             const stateClass =
-              isAnswered && correct
+              isSubmitted && correct
                 ? "border-emerald-500 bg-emerald-50"
-                : isAnswered && active
+                : isSubmitted && active
                   ? "border-rose-500 bg-rose-50"
+                  : active
+                    ? "border-teal-500 bg-teal-50"
                   : "border-slate-200 bg-white hover:border-teal-400";
 
             return (
@@ -121,13 +143,13 @@ export function QuizMode({ questions, onExit }: Props) {
             );
           })}
         </div>
-        {isAnswered && (
+        {isSubmitted && (
           <div className={`mt-4 rounded-md px-3 py-2 text-sm ${isCorrect ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"}`}>
             {isCorrect
               ? quizRunMode === "retry"
                 ? "Correct. Removed from wrong questions."
                 : "Correct."
-              : `Incorrect. Correct answer: ${current.correctAnswer?.toUpperCase() ?? "not selected"}.`}
+              : `Incorrect. Correct answer: ${formatAnswerLabel(current)}.`}
           </div>
         )}
       </div>
@@ -136,6 +158,9 @@ export function QuizMode({ questions, onExit }: Props) {
           Previous
         </button>
         <div className="flex flex-wrap gap-2">
+          <button className="btn-primary" disabled={selected.length === 0 || isSubmitted} onClick={submitAnswer}>
+            Submit Answer
+          </button>
           {quizRunMode === "retry" && (
             <button className="btn-secondary" onClick={returnToFullQuiz}>
               Full Quiz
@@ -145,7 +170,7 @@ export function QuizMode({ questions, onExit }: Props) {
             Retry Wrong
           </button>
         </div>
-        <button className="btn-primary" disabled={!isAnswered || index === activeQuestions.length - 1} onClick={() => move(index + 1)}>
+        <button className="btn-primary" disabled={!isSubmitted || index === activeQuestions.length - 1} onClick={() => move(index + 1)}>
           Next Question
         </button>
       </div>

@@ -66,9 +66,11 @@ const detectCorrectAnswer = (
   choices: Record<string, string>,
   boldSpans: BoldSpan[] = []
 ) => {
+  const detected = new Set<string>();
+
   for (const span of boldSpans) {
     if (span.choiceKey && choices[span.choiceKey.toLowerCase()]) {
-      return span.choiceKey.toLowerCase();
+      detected.add(span.choiceKey.toLowerCase());
     }
   }
 
@@ -77,7 +79,7 @@ const detectCorrectAnswer = (
     .filter(Boolean);
 
   if (normalizedBold.length === 0) {
-    return null;
+    return [...detected].sort();
   }
 
   for (const [key, value] of Object.entries(choices)) {
@@ -90,16 +92,16 @@ const detectCorrectAnswer = (
           boldText.includes(normalizedChoice)
       )
     ) {
-      return key;
+      detected.add(key);
     }
   }
 
-  return null;
+  return [...detected].sort();
 };
 
 export function parseQuestions(text: string, boldSpans: BoldSpan[] = []): QuizQuestion[] {
   return splitQuestionBlocks(text)
-    .map((block, index) => {
+    .map((block, index): QuizQuestion | null => {
       const choiceMatches = filterSequentialChoiceMatches([...block.content.matchAll(choicePattern)]);
       if (choiceMatches.length === 0) {
         return null;
@@ -108,7 +110,7 @@ export function parseQuestions(text: string, boldSpans: BoldSpan[] = []): QuizQu
       const firstChoiceIndex = choiceMatches[0].index ?? 0;
       const question = cleanSegment(block.content.slice(0, firstChoiceIndex));
       const choices: Record<string, string> = {};
-      let markedCorrectAnswer: string | null = null;
+      const markedCorrectAnswers = new Set<string>();
 
       // Each answer begins at a label such as "a." and ends right before
       // the next label. This preserves wrapped Vietnamese text while removing
@@ -121,16 +123,23 @@ export function parseQuestions(text: string, boldSpans: BoldSpan[] = []): QuizQu
         choices[key] = choice.text;
 
         if (choice.markedCorrect) {
-          markedCorrectAnswer = key;
+          markedCorrectAnswers.add(key);
         }
       });
+
+      const detectedCorrectAnswers = detectCorrectAnswer(choices, boldSpans);
 
       return {
         id: makeId(block.questionNumber, index),
         questionNumber: block.questionNumber,
         question,
         choices,
-        correctAnswer: markedCorrectAnswer ?? detectCorrectAnswer(choices, boldSpans)
+        correctAnswer:
+          markedCorrectAnswers.size > 0
+            ? [...markedCorrectAnswers].sort()
+            : detectedCorrectAnswers.length > 0
+              ? detectedCorrectAnswers
+              : null
       };
     })
     .filter((question): question is QuizQuestion => Boolean(question));

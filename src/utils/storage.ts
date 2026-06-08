@@ -1,4 +1,5 @@
 import { QuizQuestion } from "../types";
+import { normalizeAnswerKeys } from "./answerKeys";
 
 const STORAGE_KEY = "quizlet-clone-local-deck";
 const KEEP_STUDYING_KEY = "quizlet-clone-keep-studying";
@@ -18,10 +19,16 @@ const defaultDisplayPreferences: DisplayPreferences = {
   tayFont: false,
 };
 
+const normalizeDeck = (questions: QuizQuestion[]) =>
+  questions.map((question) => ({
+    ...question,
+    correctAnswer: normalizeAnswerKeys(question.correctAnswer),
+  }));
+
 export function loadDeck(): QuizQuestion[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as QuizQuestion[]) : [];
+    return raw ? normalizeDeck(JSON.parse(raw) as QuizQuestion[]) : [];
   } catch {
     return [];
   }
@@ -84,7 +91,7 @@ export function importDeck(file: File): Promise<QuizQuestion[]> {
     const reader = new FileReader();
     reader.onload = () => {
       try {
-        resolve(JSON.parse(String(reader.result)) as QuizQuestion[]);
+        resolve(normalizeDeck(JSON.parse(String(reader.result)) as QuizQuestion[]));
       } catch (error) {
         reject(error);
       }
