@@ -2,6 +2,17 @@ import { QuizQuestion } from "../types";
 
 const STORAGE_KEY = "quizlet-clone-local-deck";
 const KEEP_STUDYING_KEY = "quizlet-clone-keep-studying";
+const DISPLAY_PREFERENCES_KEY = "quizlet-clone-display-preferences";
+
+export type DisplayPreferences = {
+  darkMode: boolean;
+  comicFont: boolean;
+};
+
+const defaultDisplayPreferences: DisplayPreferences = {
+  darkMode: false,
+  comicFont: false,
+};
 
 export function loadDeck(): QuizQuestion[] {
   try {
@@ -27,6 +38,19 @@ export function loadKeepStudyingIds(): string[] {
 
 export function saveKeepStudyingIds(ids: string[]) {
   localStorage.setItem(KEEP_STUDYING_KEY, JSON.stringify(ids));
+}
+
+export function loadDisplayPreferences(): DisplayPreferences {
+  try {
+    const raw = localStorage.getItem(DISPLAY_PREFERENCES_KEY);
+    return raw ? { ...defaultDisplayPreferences, ...JSON.parse(raw) } : defaultDisplayPreferences;
+  } catch {
+    return defaultDisplayPreferences;
+  }
+}
+
+export function saveDisplayPreferences(preferences: DisplayPreferences) {
+  localStorage.setItem(DISPLAY_PREFERENCES_KEY, JSON.stringify(preferences));
 }
 
 export function importDeck(file: File): Promise<QuizQuestion[]> {

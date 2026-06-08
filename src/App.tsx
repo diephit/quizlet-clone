@@ -9,10 +9,13 @@ import { extractTextFromImage } from "./utils/ocr";
 import { parseQuestions } from "./utils/parser";
 import { extractTextFromPdf } from "./utils/pdfExtractor";
 import {
+  DisplayPreferences,
   importDeck,
   loadDeck,
+  loadDisplayPreferences,
   loadKeepStudyingIds,
   saveDeck,
+  saveDisplayPreferences,
   saveKeepStudyingIds,
 } from "./utils/storage";
 
@@ -27,11 +30,18 @@ function App() {
   const [mode, setMode] = useState<Mode>("editor");
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
+  const [displayPreferences, setDisplayPreferences] = useState<DisplayPreferences>(() => loadDisplayPreferences());
 
   useEffect(() => {
     setQuestions(loadDeck());
     setKeepStudyingIds(loadKeepStudyingIds());
   }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("theme-dark", displayPreferences.darkMode);
+    document.documentElement.classList.toggle("font-svn-comic", displayPreferences.comicFont);
+    saveDisplayPreferences(displayPreferences);
+  }, [displayPreferences]);
 
   const validQuestions = useMemo(
     () => questions.filter((question) => question.question.trim() && Object.keys(question.choices).length > 0),
@@ -115,6 +125,13 @@ function App() {
     setStatus(`Saved ${questions.length} question${questions.length === 1 ? "" : "s"} locally.`);
   };
 
+  const updateDisplayPreference = <Key extends keyof DisplayPreferences>(
+    key: Key,
+    value: DisplayPreferences[Key]
+  ) => {
+    setDisplayPreferences((preferences) => ({ ...preferences, [key]: value }));
+  };
+
   const handleImport = async (deckFile: File) => {
     try {
       const imported = await importDeck(deckFile);
@@ -178,6 +195,22 @@ function App() {
             <h1 className="mt-1 text-3xl font-bold text-slate-950"> 🌸🌸Phú Quang🌸🌸🌸🌸🌸🌸🌸🌸🌸 </h1>
           </div>
           <div className="flex flex-wrap gap-2">
+            <label className="preference-toggle">
+              <input
+                type="checkbox"
+                checked={displayPreferences.darkMode}
+                onChange={(event) => updateDisplayPreference("darkMode", event.target.checked)}
+              />
+              <span>Dark Mode</span>
+            </label>
+            <label className="preference-toggle">
+              <input
+                type="checkbox"
+                checked={displayPreferences.comicFont}
+                onChange={(event) => updateDisplayPreference("comicFont", event.target.checked)}
+              />
+              <span>SVN Comic Sans</span>
+            </label>
             <button className="btn-primary" onClick={saveCurrentDeck}>Save Deck</button>
             <button className="btn-secondary" disabled={validQuestions.length === 0} onClick={() => setMode("flashcards")}>
               Learn Flashcards
