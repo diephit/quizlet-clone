@@ -38,7 +38,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.classList.toggle("theme-dark", displayPreferences.darkMode);
+    document.documentElement.classList.toggle("theme-dark", displayPreferences.theme === "dark");
+    document.documentElement.classList.toggle("theme-pink", displayPreferences.theme === "pink");
     document.documentElement.classList.toggle("font-svn-comic", displayPreferences.comicFont);
     saveDisplayPreferences(displayPreferences);
   }, [displayPreferences]);
@@ -195,13 +196,21 @@ function App() {
             <h1 className="mt-1 text-3xl font-bold text-slate-950"> 🌸🌸Phú Quang🌸🌸🌸🌸🌸🌸🌸🌸🌸 </h1>
           </div>
           <div className="flex flex-wrap gap-2">
-            <label className="preference-toggle">
-              <input
-                type="checkbox"
-                checked={displayPreferences.darkMode}
-                onChange={(event) => updateDisplayPreference("darkMode", event.target.checked)}
-              />
-              <span>Dark Mode</span>
+            <label className="preference-select">
+              <span>Theme</span>
+              <select
+                value={displayPreferences.theme}
+                onChange={(event) =>
+                  updateDisplayPreference(
+                    "theme",
+                    event.target.value as DisplayPreferences["theme"]
+                  )
+                }
+              >
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="pink">Pink Flower</option>
+              </select>
             </label>
             <label className="preference-toggle">
               <input
@@ -209,7 +218,7 @@ function App() {
                 checked={displayPreferences.comicFont}
                 onChange={(event) => updateDisplayPreference("comicFont", event.target.checked)}
               />
-              <span>SVN Comic Sans</span>
+              <span>tày font</span>
             </label>
             <button className="btn-primary" onClick={saveCurrentDeck}>Save Deck</button>
             <button className="btn-secondary" disabled={validQuestions.length === 0} onClick={() => setMode("flashcards")}>

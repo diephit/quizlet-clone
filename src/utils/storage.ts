@@ -5,12 +5,12 @@ const KEEP_STUDYING_KEY = "quizlet-clone-keep-studying";
 const DISPLAY_PREFERENCES_KEY = "quizlet-clone-display-preferences";
 
 export type DisplayPreferences = {
-  darkMode: boolean;
+  theme: "light" | "dark" | "🌸🌸🌸🌸🌸";
   comicFont: boolean;
 };
 
 const defaultDisplayPreferences: DisplayPreferences = {
-  darkMode: false,
+  theme: "light",
   comicFont: false,
 };
 
@@ -43,7 +43,23 @@ export function saveKeepStudyingIds(ids: string[]) {
 export function loadDisplayPreferences(): DisplayPreferences {
   try {
     const raw = localStorage.getItem(DISPLAY_PREFERENCES_KEY);
-    return raw ? { ...defaultDisplayPreferences, ...JSON.parse(raw) } : defaultDisplayPreferences;
+    if (!raw) {
+      return defaultDisplayPreferences;
+    }
+
+    const parsed = JSON.parse(raw) as Partial<DisplayPreferences> & { darkMode?: boolean };
+    const theme =
+      parsed.theme === "light" || parsed.theme === "dark" || parsed.theme === "🌸🌸🌸🌸🌸"
+        ? parsed.theme
+        : parsed.darkMode
+          ? "dark"
+          : defaultDisplayPreferences.theme;
+
+    return {
+      ...defaultDisplayPreferences,
+      ...parsed,
+      theme,
+    };
   } catch {
     return defaultDisplayPreferences;
   }

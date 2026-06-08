@@ -65,6 +65,14 @@
   .preference-toggle input {
     @apply h-4 w-4 accent-teal-600;
   }
+
+  .preference-select {
+    @apply inline-flex h-10 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 transition hover:border-teal-500 hover:text-teal-700;
+  }
+
+  .preference-select select {
+    @apply rounded border-0 bg-transparent text-sm font-semibold outline-none;
+  }
 }
 
 html.font-svn-comic body,
@@ -120,14 +128,16 @@ html.theme-dark input::placeholder {
 }
 
 html.theme-dark .btn-secondary,
-html.theme-dark .preference-toggle {
+html.theme-dark .preference-toggle,
+html.theme-dark .preference-select {
   background-color: #1e293b;
   border-color: #475569;
   color: #f8fafc;
 }
 
 html.theme-dark .btn-secondary:hover,
-html.theme-dark .preference-toggle:hover {
+html.theme-dark .preference-toggle:hover,
+html.theme-dark .preference-select:hover {
   border-color: #2dd4bf;
   color: #5eead4;
 }
@@ -162,4 +172,118 @@ html.theme-dark .text-emerald-700 {
 
 html.theme-dark .text-rose-700 {
   color: #fda4af;
+}
+
+html.theme-pink body {
+  background:
+    radial-gradient(circle at 18% 14%, rgba(251, 207, 232, 0.7), transparent 24rem),
+    radial-gradient(circle at 86% 12%, rgba(254, 205, 211, 0.62), transparent 20rem),
+    linear-gradient(135deg, #fff1f6 0%, #fff7ed 52%, #fdf2f8 100%);
+  color: #831843;
+}
+
+html.theme-pink .bg-slate-100 {
+  background:
+    radial-gradient(circle at 16% 12%, rgba(251, 207, 232, 0.75), transparent 22rem),
+    radial-gradient(circle at 90% 18%, rgba(187, 247, 208, 0.4), transparent 18rem),
+    linear-gradient(135deg, #fff1f6 0%, #fff7ed 54%, #fdf2f8 100%);
+}
+
+html.theme-pink .bg-white {
+  background-color: rgba(255, 248, 252, 0.92);
+}
+
+html.theme-pink .bg-slate-50 {
+  background-color: #fff1f6;
+}
+
+html.theme-pink .border-slate-300,
+html.theme-pink .border-slate-200,
+html.theme-pink .border-slate-100 {
+  border-color: #f9a8d4;
+}
+
+html.theme-pink .text-slate-950,
+html.theme-pink .text-slate-900,
+html.theme-pink .text-slate-800 {
+  color: #831843;
+}
+
+html.theme-pink .text-slate-600,
+html.theme-pink .text-slate-500 {
+  color: #be185d;
+}
+
+html.theme-pink .text-teal-700 {
+  color: #15803d;
+}
+
+html.theme-pink .btn-primary {
+  background-color: #db2777;
+  color: #fff7fb;
+}
+
+html.theme-pink .btn-primary:hover {
+  background-color: #be185d;
+}
+
+html.theme-pink .btn-secondary,
+html.theme-pink .preference-toggle,
+html.theme-pink .preference-select {
+  background-color: rgba(255, 248, 252, 0.94);
+  border-color: #f9a8d4;
+  color: #9d174d;
+}
+
+html.theme-pink .btn-secondary:hover,
+html.theme-pink .preference-toggle:hover,
+html.theme-pink .preference-select:hover {
+  border-color: #ec4899;
+  color: #be185d;
+}
+
+html.theme-pink .input,
+html.theme-pink textarea,
+html.theme-pink select {
+  background-color: #fff8fc;
+  border-color: #f9a8d4;
+  color: #831843;
+}
+
+html.theme-pink textarea::placeholder,
+html.theme-pink input::placeholder {
+  color: #db2777;
+}
+
+html.theme-pink .flashcard,
+html.theme-pink .choice-button,
+html.theme-pink .empty-state {
+  background-color: rgba(255, 248, 252, 0.94);
+  border-color: #f9a8d4;
+  color: #831843;
+  box-shadow: 0 14px 38px rgba(219, 39, 119, 0.12);
+}
+
+html.theme-pink .choice-button.border-slate-200 {
+  background-color: #fff1f6;
+}
+
+html.theme-pink .bg-teal-50 {
+  background-color: rgba(220, 252, 231, 0.78);
+}
+
+html.theme-pink .bg-emerald-50 {
+  background-color: rgba(220, 252, 231, 0.88);
+}
+
+html.theme-pink .bg-rose-50 {
+  background-color: rgba(255, 228, 230, 0.92);
+}
+
+html.theme-pink .text-emerald-700 {
+  color: #15803d;
+}
+
+html.theme-pink .text-rose-700 {
+  color: #be123c;
 }
