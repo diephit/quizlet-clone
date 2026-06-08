@@ -4,14 +4,18 @@ const STORAGE_KEY = "quizlet-clone-local-deck";
 const KEEP_STUDYING_KEY = "quizlet-clone-keep-studying";
 const DISPLAY_PREFERENCES_KEY = "quizlet-clone-display-preferences";
 
+export type ThemePreference = "light" | "dark" | "🌸🌸🌸🌸🌸";
+
 export type DisplayPreferences = {
-  theme: "light" | "dark" | "🌸🌸🌸🌸🌸";
-  comicFont: boolean;
+  theme: ThemePreference;
+  tayFont: boolean;
 };
+
+const flowerTheme: ThemePreference = "🌸🌸🌸🌸🌸";
 
 const defaultDisplayPreferences: DisplayPreferences = {
   theme: "light",
-  comicFont: false,
+  tayFont: false,
 };
 
 export function loadDeck(): QuizQuestion[] {
@@ -47,18 +51,24 @@ export function loadDisplayPreferences(): DisplayPreferences {
       return defaultDisplayPreferences;
     }
 
-    const parsed = JSON.parse(raw) as Partial<DisplayPreferences> & { darkMode?: boolean };
+    const parsed = JSON.parse(raw) as Partial<DisplayPreferences> & {
+      comicFont?: boolean;
+      darkMode?: boolean;
+      theme?: string;
+    };
+    const rawTheme = String(parsed.theme ?? "");
     const theme =
-      parsed.theme === "light" || parsed.theme === "dark" || parsed.theme === "🌸🌸🌸🌸🌸"
-        ? parsed.theme
-        : parsed.darkMode
-          ? "dark"
-          : defaultDisplayPreferences.theme;
+      rawTheme === "light" || rawTheme === "dark" || rawTheme === flowerTheme
+        ? rawTheme
+        : rawTheme === "pink" || rawTheme === "flowers"
+          ? flowerTheme
+          : parsed.darkMode
+            ? "dark"
+            : defaultDisplayPreferences.theme;
 
     return {
-      ...defaultDisplayPreferences,
-      ...parsed,
       theme,
+      tayFont: parsed.tayFont ?? parsed.comicFont ?? defaultDisplayPreferences.tayFont,
     };
   } catch {
     return defaultDisplayPreferences;

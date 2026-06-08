@@ -39,8 +39,8 @@ function App() {
 
   useEffect(() => {
     document.documentElement.classList.toggle("theme-dark", displayPreferences.theme === "dark");
-    document.documentElement.classList.toggle("theme-pink", displayPreferences.theme === "pink");
-    document.documentElement.classList.toggle("font-svn-comic", displayPreferences.comicFont);
+    document.documentElement.classList.toggle("theme-pink", displayPreferences.theme === "🌸🌸🌸🌸🌸");
+    document.documentElement.classList.toggle("font-svn-comic", displayPreferences.tayFont);
     saveDisplayPreferences(displayPreferences);
   }, [displayPreferences]);
 
@@ -209,14 +209,14 @@ function App() {
               >
                 <option value="light">Light</option>
                 <option value="dark">Dark</option>
-                <option value="pink">Pink Flower</option>
+                <option value="🌸🌸🌸🌸🌸">🌸🌸🌸🌸🌸</option>
               </select>
             </label>
             <label className="preference-toggle">
               <input
                 type="checkbox"
-                checked={displayPreferences.comicFont}
-                onChange={(event) => updateDisplayPreference("comicFont", event.target.checked)}
+                checked={displayPreferences.tayFont}
+                onChange={(event) => updateDisplayPreference("tayFont", event.target.checked)}
               />
               <span>tày font</span>
             </label>
