@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { QuizQuestion } from "../types";
 import { answerSetsMatch, formatAnswerLabel, normalizeAnswerKeys } from "../utils/answerKeys";
 
@@ -16,6 +16,7 @@ export function QuizMode({ questions, onExit }: Props) {
   const [submittedById, setSubmittedById] = useState<Record<string, boolean>>({});
   const [incorrectIds, setIncorrectIds] = useState<string[]>([]);
   const [retryIds, setRetryIds] = useState<string[]>([]);
+  const [questionNumberInput, setQuestionNumberInput] = useState("");
   const activeQuestions = useMemo(
     () => (quizRunMode === "retry" ? questions.filter((question) => retryIds.includes(question.id)) : questions),
     [questions, quizRunMode, retryIds]
@@ -86,6 +87,25 @@ export function QuizMode({ questions, onExit }: Props) {
     setIndex(Math.min(Math.max(nextIndex, 0), activeQuestions.length - 1));
   };
 
+  const goToQuestionNumber = (questionNumber: number) => {
+    const nextIndex = activeQuestions.findIndex((question) => question.questionNumber === questionNumber);
+
+    if (nextIndex >= 0) {
+      move(nextIndex);
+    }
+  };
+
+  const handleQuestionJump = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const questionNumber = Number(questionNumberInput);
+    if (!Number.isInteger(questionNumber)) {
+      return;
+    }
+
+    goToQuestionNumber(questionNumber);
+  };
+
   const startRetryWrong = () => {
     const nextRetryIds = incorrectQuestions.map((question) => question.id);
     if (nextRetryIds.length === 0) {
@@ -112,7 +132,22 @@ export function QuizMode({ questions, onExit }: Props) {
         <span>
           {quizRunMode === "retry" ? "Retry Wrong" : "Quiz"} {index + 1}/{activeQuestions.length}
         </span>
-        <button className="btn-secondary" onClick={onExit}>Back to Editor</button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <form className="flex items-center gap-2" onSubmit={handleQuestionJump}>
+            <label className="sr-only" htmlFor="quiz-question-number">Go to question number</label>
+            <input
+              className="input h-10 w-28"
+              id="quiz-question-number"
+              min={1}
+              placeholder={`Q ${current.questionNumber}`}
+              type="number"
+              value={questionNumberInput}
+              onChange={(event) => setQuestionNumberInput(event.target.value)}
+            />
+            <button className="btn-secondary" type="submit">Go</button>
+          </form>
+          <button className="btn-secondary" onClick={onExit}>Back to Editor</button>
+        </div>
       </div>
       <div className="rounded-lg border border-slate-200 bg-white p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
