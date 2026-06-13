@@ -193,7 +193,7 @@ function App() {
         <header className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-teal-700">Suộc mln 9 âm 👣 Kinh bởi</p>
-            <h1 className="mt-1 text-3xl font-bold text-slate-950"> 🌸🌸Phú Quang🌸🌸🌸🌸🌸🌸🌸🌸🌸 </h1>
+            <h1 className="mt-1 text-3xl font-bold text-slate-950"> Phú Quang doki doki fuwa fuwa oishikunare moe moe kyun  </h1>
           </div>
           <div className="flex flex-wrap gap-2">
             <label className="preference-select">
