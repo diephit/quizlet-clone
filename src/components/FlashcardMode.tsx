@@ -1,4 +1,4 @@
-import { PointerEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, PointerEvent, useEffect, useMemo, useRef, useState } from "react";
 import { QuizQuestion } from "../types";
 import { formatAnswerText } from "../utils/answerKeys";
 
@@ -43,6 +43,7 @@ export function FlashcardMode({
   const [dragX, setDragX] = useState(0);
   const [pendingMark, setPendingMark] = useState<StudyMark | null>(null);
   const [darkModeActive, setDarkModeActive] = useState(false);
+  const [questionNumberInput, setQuestionNumberInput] = useState("");
   const dragStartRef = useRef<number | null>(null);
   const suppressClickRef = useRef(false);
   const feedbackTimerRef = useRef<number | null>(null);
@@ -51,6 +52,25 @@ export function FlashcardMode({
   const move = (nextIndex: number) => {
     setIndex(Math.min(Math.max(nextIndex, 0), questions.length - 1));
     setRevealed(false);
+  };
+
+  const goToQuestionNumber = (questionNumber: number) => {
+    const nextIndex = questions.findIndex((question) => question.questionNumber === questionNumber);
+
+    if (nextIndex >= 0) {
+      move(nextIndex);
+    }
+  };
+
+  const handleQuestionJump = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const questionNumber = Number(questionNumberInput);
+    if (!Number.isInteger(questionNumber)) {
+      return;
+    }
+
+    goToQuestionNumber(questionNumber);
   };
 
   const advanceAfterMark = () => {
@@ -225,7 +245,23 @@ export function FlashcardMode({
     <section className="study-panel">
       <div className="study-topbar">
         <span>{title ?? (reviewOnly ? "Review Flashcards" : "Flashcards")} {index + 1}/{questions.length}</span>
-        <button className="btn-secondary" onClick={onExit}>Back to Editor</button>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <form className="flex items-center gap-2" onSubmit={handleQuestionJump}>
+            <label className="sr-only" htmlFor="flashcard-question-number">Go to question number</label>
+            <input
+              className="input h-10 w-28"
+              disabled={Boolean(pendingMark)}
+              id="flashcard-question-number"
+              min={1}
+              placeholder={`Q ${current.questionNumber}`}
+              type="number"
+              value={questionNumberInput}
+              onChange={(event) => setQuestionNumberInput(event.target.value)}
+            />
+            <button className="btn-secondary" disabled={Boolean(pendingMark)} type="submit">Go</button>
+          </form>
+          <button className="btn-secondary" onClick={onExit}>Back to Editor</button>
+        </div>
       </div>
       {onMark && (
         <div className="grid gap-2 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 sm:grid-cols-3 sm:items-center">
